@@ -5,9 +5,9 @@ import { authService } from '../services/auth.service';
 import { Session } from '../types';
 
 function Sessions() {
-  const [sessions, setSessions] = useState<any>([]);
-  const [loading, setLoading] = useState<any>(true);
-  const [error, setError] = useState<any>('');
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
   const user = authService.getCurrentUser();
   const token = authService.getToken();
 
@@ -15,7 +15,7 @@ function Sessions() {
     fetchSessions();
   }, []);
 
-  const fetchSessions = async (): Promise<any> => {
+  const fetchSessions = async (): Promise<void> => {
     try {
       setLoading(true);
       const response = await api.get<Session[]>('/session', {
@@ -24,7 +24,7 @@ function Sessions() {
         },
       });
       setSessions(response.data);
-    } catch (err: any) {
+    } catch (err) {
       setError('Failed to load sessions');
       console.error(err);
     } finally {
@@ -32,7 +32,7 @@ function Sessions() {
     }
   };
 
-  const handleDelete = async (sessionId: any): Promise<any> => {
+  const handleDelete = async (sessionId: number): Promise<void> => {
     if (!window.confirm('Are you sure you want to delete this session?')) {
       return;
     }
@@ -44,7 +44,7 @@ function Sessions() {
         },
       });
       fetchSessions();
-    } catch (err: any) {
+    } catch (err) {
       alert('Failed to delete session');
       console.error(err);
     }
@@ -89,7 +89,7 @@ function Sessions() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {sessions.map((session: any) => (
+            {sessions.map((session: Session) => (
               <div key={session.id} className="bg-white rounded-lg shadow-md p-6">
                 <h3 className="text-xl font-bold text-gray-800 mb-2">
                   {session.name}
