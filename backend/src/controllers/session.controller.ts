@@ -1,39 +1,12 @@
 import { Response } from 'express';
-import { PrismaClient, Prisma } from '@prisma/client';
 import { AuthRequest } from '../middleware/auth.middleware';
+import { sessionService } from '../services/session.service';
 import { AppError } from '../errors/AppError';
-
-const prisma = new PrismaClient();
 
 export class SessionController {
   async getAll(req: AuthRequest, res: Response): Promise<void> {
-    const sessions = await prisma.session.findMany({
-      include: {
-        teacher: true,
-        participants: {
-          include: {
-            user: true,
-          },
-        },
-      },
-    });
-
-    const response = sessions.map((session) => ({
-      id: session.id,
-      name: session.name,
-      date: session.date,
-      description: session.description,
-      teacher: {
-        id: session.teacher.id,
-        firstName: session.teacher.firstName,
-        lastName: session.teacher.lastName,
-      },
-      users: session.participants.map((p) => p.user.id),
-      createdAt: session.createdAt,
-      updatedAt: session.updatedAt,
-    }));
-
-    res.status(200).json(response);
+    const sessions = await sessionService.getAll();
+    res.status(200).json(sessions);
   }
 
   async getById(req: AuthRequest, res: Response): Promise<void> {
@@ -49,36 +22,8 @@ export class SessionController {
       throw new AppError(400, 'Invalid session ID');
     }
 
-    const session = await prisma.session.findUnique({
-      where: { id: sessionId },
-      include: {
-        teacher: true,
-        participants: {
-          include: {
-            user: true,
-          },
-        },
-      },
-    });
-
-    if (!session) {
-      throw new AppError(404, 'Session not found');
-    }
-
-    res.status(200).json({
-      id: session.id,
-      name: session.name,
-      date: session.date,
-      description: session.description,
-      teacher: {
-        id: session.teacher.id,
-        firstName: session.teacher.firstName,
-        lastName: session.teacher.lastName,
-      },
-      users: session.participants.map((p) => p.user.id),
-      createdAt: session.createdAt,
-      updatedAt: session.updatedAt,
-    });
+    const session = await sessionService.getById(sessionId);
+    res.status(200).json(session);
   }
 
   async create(req: AuthRequest, res: Response): Promise<void> {
@@ -96,50 +41,17 @@ export class SessionController {
     if (!teacherId) {
       throw new AppError(400, 'Teacher ID is required');
     }
-
-    const user = await prisma.user.findUnique({
-      where: { id: req.userId },
-    });
-
-    if (!user || !user.admin) {
-      throw new AppError(403, 'Admin access required');
+    if (!req.userId) {
+      throw new AppError(401, 'Unauthorized');
     }
 
-    const teacher = await prisma.teacher.findUnique({
-      where: { id: teacherId },
+    const session = await sessionService.create(req.userId, {
+      name,
+      date,
+      description,
+      teacherId,
     });
-
-    if (!teacher) {
-      throw new AppError(404, 'Teacher not found');
-    }
-
-    const session = await prisma.session.create({
-      data: {
-        name,
-        date: new Date(date),
-        description,
-        teacherId,
-      },
-      include: {
-        teacher: true,
-        participants: true,
-      },
-    });
-
-    res.status(201).json({
-      id: session.id,
-      name: session.name,
-      date: session.date,
-      description: session.description,
-      teacher: {
-        id: session.teacher.id,
-        firstName: session.teacher.firstName,
-        lastName: session.teacher.lastName,
-      },
-      users: [],
-      createdAt: session.createdAt,
-      updatedAt: session.updatedAt,
-    });
+    res.status(201).json(session);
   }
 
   async update(req: AuthRequest, res: Response): Promise<void> {
@@ -155,64 +67,17 @@ export class SessionController {
     if (isNaN(sessionId)) {
       throw new AppError(400, 'Invalid session ID');
     }
-
-    const user = await prisma.user.findUnique({
-      where: { id: req.userId },
-    });
-
-    if (!user || !user.admin) {
-      throw new AppError(403, 'Admin access required');
+    if (!req.userId) {
+      throw new AppError(401, 'Unauthorized');
     }
 
-    const existingSession = await prisma.session.findUnique({
-      where: { id: sessionId },
+    const session = await sessionService.update(req.userId, sessionId, {
+      name,
+      date,
+      description,
+      teacherId,
     });
-
-    if (!existingSession) {
-      throw new AppError(404, 'Session not found');
-    }
-
-    const updateData: Prisma.SessionUncheckedUpdateInput = {};
-    if (name) updateData.name = name;
-    if (date) updateData.date = new Date(date);
-    if (description) updateData.description = description;
-    if (teacherId) {
-      const teacher = await prisma.teacher.findUnique({
-        where: { id: teacherId },
-      });
-      if (!teacher) {
-        throw new AppError(404, 'Teacher not found');
-      }
-      updateData.teacherId = teacherId;
-    }
-
-    const session = await prisma.session.update({
-      where: { id: sessionId },
-      data: updateData,
-      include: {
-        teacher: true,
-        participants: {
-          include: {
-            user: true,
-          },
-        },
-      },
-    });
-
-    res.status(200).json({
-      id: session.id,
-      name: session.name,
-      date: session.date,
-      description: session.description,
-      teacher: {
-        id: session.teacher.id,
-        firstName: session.teacher.firstName,
-        lastName: session.teacher.lastName,
-      },
-      users: session.participants.map((p) => p.user.id),
-      createdAt: session.createdAt,
-      updatedAt: session.updatedAt,
-    });
+    res.status(200).json(session);
   }
 
   async delete(req: AuthRequest, res: Response): Promise<void> {
@@ -227,27 +92,11 @@ export class SessionController {
     if (isNaN(sessionId)) {
       throw new AppError(400, 'Invalid session ID');
     }
-
-    const user = await prisma.user.findUnique({
-      where: { id: req.userId },
-    });
-
-    if (!user || !user.admin) {
-      throw new AppError(403, 'Admin access required');
+    if (!req.userId) {
+      throw new AppError(401, 'Unauthorized');
     }
 
-    const existingSession = await prisma.session.findUnique({
-      where: { id: sessionId },
-    });
-
-    if (!existingSession) {
-      throw new AppError(404, 'Session not found');
-    }
-
-    await prisma.session.delete({
-      where: { id: sessionId },
-    });
-
+    await sessionService.delete(req.userId, sessionId);
     res.status(200).json({ message: 'Session deleted successfully' });
   }
 
@@ -271,42 +120,7 @@ export class SessionController {
       throw new AppError(400, 'Invalid user ID');
     }
 
-    const session = await prisma.session.findUnique({
-      where: { id: sessionId },
-    });
-
-    if (!session) {
-      throw new AppError(404, 'Session not found');
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: participantUserId },
-    });
-
-    if (!user) {
-      throw new AppError(404, 'User not found');
-    }
-
-    const existingParticipation = await prisma.sessionParticipation.findUnique({
-      where: {
-        sessionId_userId: {
-          sessionId,
-          userId: participantUserId,
-        },
-      },
-    });
-
-    if (existingParticipation) {
-      throw new AppError(400, 'User already participating in this session');
-    }
-
-    await prisma.sessionParticipation.create({
-      data: {
-        sessionId,
-        userId: participantUserId,
-      },
-    });
-
+    await sessionService.participate(sessionId, participantUserId);
     res.status(200).json({ message: 'Successfully joined the session' });
   }
 
@@ -330,28 +144,7 @@ export class SessionController {
       throw new AppError(400, 'Invalid user ID');
     }
 
-    const participation = await prisma.sessionParticipation.findUnique({
-      where: {
-        sessionId_userId: {
-          sessionId,
-          userId: participantUserId,
-        },
-      },
-    });
-
-    if (!participation) {
-      throw new AppError(404, 'Participation not found');
-    }
-
-    await prisma.sessionParticipation.delete({
-      where: {
-        sessionId_userId: {
-          sessionId,
-          userId: participantUserId,
-        },
-      },
-    });
-
+    await sessionService.unparticipate(sessionId, participantUserId);
     res.status(200).json({ message: 'Successfully left the session' });
   }
 }
