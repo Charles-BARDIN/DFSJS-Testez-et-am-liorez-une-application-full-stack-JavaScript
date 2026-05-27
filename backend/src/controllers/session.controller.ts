@@ -29,18 +29,6 @@ export class SessionController {
   async create(req: AuthRequest, res: Response): Promise<void> {
     const { name, date, description, teacherId } = req.body;
 
-    if (!name) {
-      throw new AppError(400, 'Name is required');
-    }
-    if (!date) {
-      throw new AppError(400, 'Date is required');
-    }
-    if (!description) {
-      throw new AppError(400, 'Description is required');
-    }
-    if (!teacherId) {
-      throw new AppError(400, 'Teacher ID is required');
-    }
     if (!req.userId) {
       throw new AppError(401, 'Unauthorized');
     }

@@ -5,6 +5,9 @@ import { TeacherController } from '../controllers/teacher.controller';
 import { UserController } from '../controllers/user.controller';
 import { authMiddleware } from '../middleware/auth.middleware';
 import { asyncHandler } from '../middleware/asyncHandler';
+import { validateBody } from '../middleware/validate.middleware';
+import { LoginSchema, RegisterSchema } from '../dto/auth.dto';
+import { CreateSessionSchema, UpdateSessionSchema } from '../dto/session.dto';
 
 const router = Router();
 
@@ -15,14 +18,14 @@ const teacherController = new TeacherController();
 const userController = new UserController();
 
 // Auth routes (public)
-router.post('/api/auth/login', asyncHandler((req, res) => authController.login(req, res)));
-router.post('/api/auth/register', asyncHandler((req, res) => authController.register(req, res)));
+router.post('/api/auth/login', validateBody(LoginSchema), asyncHandler((req, res) => authController.login(req, res)));
+router.post('/api/auth/register', validateBody(RegisterSchema), asyncHandler((req, res) => authController.register(req, res)));
 
 // Session routes (protected)
 router.get('/api/session', authMiddleware, asyncHandler((req, res) => sessionController.getAll(req, res)));
 router.get('/api/session/:id', authMiddleware, asyncHandler((req, res) => sessionController.getById(req, res)));
-router.post('/api/session', authMiddleware, asyncHandler((req, res) => sessionController.create(req, res)));
-router.put('/api/session/:id', authMiddleware, asyncHandler((req, res) => sessionController.update(req, res)));
+router.post('/api/session', authMiddleware, validateBody(CreateSessionSchema), asyncHandler((req, res) => sessionController.create(req, res)));
+router.put('/api/session/:id', authMiddleware, validateBody(UpdateSessionSchema), asyncHandler((req, res) => sessionController.update(req, res)));
 router.delete('/api/session/:id', authMiddleware, asyncHandler((req, res) => sessionController.delete(req, res)));
 router.post('/api/session/:id/participate/:userId', authMiddleware, asyncHandler((req, res) => sessionController.participate(req, res)));
 router.delete('/api/session/:id/participate/:userId', authMiddleware, asyncHandler((req, res) => sessionController.unparticipate(req, res)));
