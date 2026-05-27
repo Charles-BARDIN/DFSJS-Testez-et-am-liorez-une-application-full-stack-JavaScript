@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { authService } from '../services/auth.service';
+import { isRequestCanceled } from '../utils/error';
 import { Session } from '../types';
 
 function Sessions() {
@@ -9,26 +10,28 @@ function Sessions() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   const user = authService.getCurrentUser();
-  const token = authService.getToken();
 
   useEffect(() => {
-    fetchSessions();
+    const controller = new AbortController();
+    fetchSessions(controller.signal);
+    return () => controller.abort();
   }, []);
 
-  const fetchSessions = async (): Promise<void> => {
+  const fetchSessions = async (signal?: AbortSignal): Promise<void> => {
     try {
       setLoading(true);
-      const response = await api.get<Session[]>('/session', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await api.get<Session[]>('/session', { signal });
       setSessions(response.data);
     } catch (err) {
+      if (isRequestCanceled(err)) {
+        return;
+      }
       setError('Failed to load sessions');
       console.error(err);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   };
 
@@ -38,11 +41,7 @@ function Sessions() {
     }
 
     try {
-      await api.delete(`/session/${sessionId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await api.delete(`/session/${sessionId}`);
       fetchSessions();
     } catch (err) {
       alert('Failed to delete session');
@@ -73,14 +72,14 @@ function Sessions() {
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800">Yoga Sessions</h1>
-          {user && user.admin ? (
+          {user?.admin && (
             <Link
               to="/sessions/create"
               className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700"
             >
               Create Session
             </Link>
-          ) : null}
+          )}
         </div>
 
         {sessions.length === 0 ? (
@@ -115,14 +114,14 @@ function Sessions() {
                     View Details
                   </Link>
 
-                  {user && user.admin ? (
+                  {user?.admin && (
                     <button
                       onClick={() => handleDelete(session.id)}
                       className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
                     >
                       Delete
                     </button>
-                  ) : null}
+                  )}
                 </div>
               </div>
             ))}

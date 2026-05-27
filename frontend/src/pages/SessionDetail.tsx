@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { authService } from '../services/auth.service';
+import { isRequestCanceled } from '../utils/error';
 import { Session } from '../types';
 
 function SessionDetail() {
@@ -11,26 +12,28 @@ function SessionDetail() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
   const user = authService.getCurrentUser();
-  const token = authService.getToken();
 
   useEffect(() => {
-    fetchSession();
+    const controller = new AbortController();
+    fetchSession(controller.signal);
+    return () => controller.abort();
   }, [id]);
 
-  const fetchSession = async (): Promise<void> => {
+  const fetchSession = async (signal?: AbortSignal): Promise<void> => {
     try {
       setLoading(true);
-      const response = await api.get<Session>(`/session/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await api.get<Session>(`/session/${id}`, { signal });
       setSession(response.data);
     } catch (err) {
+      if (isRequestCanceled(err)) {
+        return;
+      }
       setError('Failed to load session details');
       console.error(err);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   };
 
@@ -39,15 +42,7 @@ function SessionDetail() {
       return;
     }
     try {
-      await api.post(
-        `/session/${id}/participate/${user.id}`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      await api.post(`/session/${id}/participate/${user.id}`, {});
       fetchSession();
     } catch (err) {
       alert('Failed to join session');
@@ -60,11 +55,7 @@ function SessionDetail() {
       return;
     }
     try {
-      await api.delete(`/session/${id}/participate/${user.id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await api.delete(`/session/${id}/participate/${user.id}`);
       fetchSession();
     } catch (err) {
       alert('Failed to leave session');
@@ -78,11 +69,7 @@ function SessionDetail() {
     }
 
     try {
-      await api.delete(`/session/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await api.delete(`/session/${id}`);
       navigate('/sessions');
     } catch (err) {
       alert('Failed to delete session');

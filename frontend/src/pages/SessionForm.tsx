@@ -2,7 +2,7 @@ import { ChangeEvent, FormEvent, useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import api from '../services/api';
 import { authService } from '../services/auth.service';
-import { getErrorMessage } from '../utils/error';
+import { getErrorMessage, isRequestCanceled } from '../utils/error';
 import { Teacher, Session } from '../types';
 
 interface SessionFormState {
@@ -27,7 +27,6 @@ function SessionForm() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const user = authService.getCurrentUser();
-  const token = authService.getToken();
 
   // Redirect if not admin
   useEffect(() => {
@@ -37,32 +36,29 @@ function SessionForm() {
   }, [user, navigate]);
 
   useEffect(() => {
-    fetchTeachers();
+    const controller = new AbortController();
+    fetchTeachers(controller.signal);
     if (isEditMode) {
-      fetchSession();
+      fetchSession(controller.signal);
     }
+    return () => controller.abort();
   }, [id]);
 
-  const fetchTeachers = async (): Promise<void> => {
+  const fetchTeachers = async (signal?: AbortSignal): Promise<void> => {
     try {
-      const response = await api.get<Teacher[]>('/teacher', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await api.get<Teacher[]>('/teacher', { signal });
       setTeachers(response.data);
     } catch (err) {
+      if (isRequestCanceled(err)) {
+        return;
+      }
       console.error('Failed to fetch teachers', err);
     }
   };
 
-  const fetchSession = async (): Promise<void> => {
+  const fetchSession = async (signal?: AbortSignal): Promise<void> => {
     try {
-      const response = await api.get<Session>(`/session/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await api.get<Session>(`/session/${id}`, { signal });
       const session = response.data;
       setFormData({
         name: session.name,
@@ -71,6 +67,9 @@ function SessionForm() {
         teacherId: session.teacher.id,
       });
     } catch (err) {
+      if (isRequestCanceled(err)) {
+        return;
+      }
       setError('Failed to load session');
       console.error(err);
     }
@@ -93,17 +92,9 @@ function SessionForm() {
 
     try {
       if (isEditMode) {
-        await api.put(`/session/${id}`, formData, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        await api.put(`/session/${id}`, formData);
       } else {
-        await api.post('/session', formData, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        await api.post('/session', formData);
       }
       navigate('/sessions');
     } catch (err) {
@@ -121,11 +112,11 @@ function SessionForm() {
             {isEditMode ? 'Edit Session' : 'Create New Session'}
           </h1>
 
-          {error ? (
+          {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
               {error}
             </div>
-          ) : null}
+          )}
 
           <form onSubmit={handleSubmit}>
             <div className="mb-4">

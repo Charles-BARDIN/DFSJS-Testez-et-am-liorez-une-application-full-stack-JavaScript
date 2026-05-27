@@ -13,3 +13,11 @@ export function getErrorMessage(error: unknown, fallback: string): string {
   }
   return fallback;
 }
+
+/**
+ * Indique si l'erreur provient de l'annulation d'une requête (AbortController).
+ * Permet d'ignorer ces erreurs lors du nettoyage des effets.
+ */
+export function isRequestCanceled(error: unknown): boolean {
+  return axios.isCancel(error);
+}

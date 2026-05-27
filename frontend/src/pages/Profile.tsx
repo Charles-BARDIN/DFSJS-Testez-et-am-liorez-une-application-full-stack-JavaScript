@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { authService } from '../services/auth.service';
+import { isRequestCanceled } from '../utils/error';
 import { User } from '../types';
 
 function Profile() {
@@ -12,32 +13,32 @@ function Profile() {
   const [promoteLoading, setPromoteLoading] = useState<boolean>(false);
   const [promoteError, setPromoteError] = useState<string>('');
   const user = authService.getCurrentUser();
-  const token = authService.getToken();
   const isDev = import.meta.env.DEV;
 
   useEffect(() => {
-    if (user) {
-      fetchUserInfo();
-    }
+    const controller = new AbortController();
+    fetchUserInfo(controller.signal);
+    return () => controller.abort();
   }, []);
 
-  const fetchUserInfo = async (): Promise<void> => {
+  const fetchUserInfo = async (signal?: AbortSignal): Promise<void> => {
     if (!user) {
       return;
     }
     try {
       setLoading(true);
-      const response = await api.get<User>(`/user/${user.id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await api.get<User>(`/user/${user.id}`, { signal });
       setUserInfo(response.data);
     } catch (err) {
+      if (isRequestCanceled(err)) {
+        return;
+      }
       setError('Failed to load user information');
       console.error(err);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) {
+        setLoading(false);
+      }
     }
   };
 
@@ -50,11 +51,7 @@ function Profile() {
     }
 
     try {
-      await api.delete(`/user/${user.id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      await api.delete(`/user/${user.id}`);
       authService.logout();
       navigate('/login');
     } catch (err) {
@@ -67,15 +64,7 @@ function Profile() {
     try {
       setPromoteError('');
       setPromoteLoading(true);
-      const response = await api.post<User>(
-        '/user/promote-admin',
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+      const response = await api.post<User>('/user/promote-admin', {});
       setUserInfo(response.data);
       authService.updateCurrentUser({ admin: response.data.admin });
     } catch (err) {
@@ -147,7 +136,7 @@ function Profile() {
                   </span>
                 )}
               </p>
-              {isDev && !userInfo.admin ? (
+              {isDev && !userInfo.admin && (
                 <div className="mt-3">
                   <button
                     onClick={handlePromoteAdmin}
@@ -156,11 +145,11 @@ function Profile() {
                   >
                     {promoteLoading ? 'Promoting...' : 'Promote to Admin (Dev)'}
                   </button>
-                  {promoteError ? (
+                  {promoteError && (
                     <div className="mt-2 text-sm text-red-600">{promoteError}</div>
-                  ) : null}
+                  )}
                 </div>
-              ) : null}
+              )}
             </div>
 
             <div className="border-b pb-4">
