@@ -2,9 +2,35 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite'
+import istanbul from 'vite-plugin-istanbul';
+
+// Instrumentation du code pour la couverture E2E (Cypress), activée à la demande
+// via INSTRUMENT_COVERAGE=true afin de ne jamais impacter le build de production.
+const instrument = process.env.INSTRUMENT_COVERAGE === 'true';
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    ...(instrument
+      ? [
+          istanbul({
+            include: ['src/**/*.ts', 'src/**/*.tsx'],
+            exclude: [
+              'node_modules',
+              'src/test',
+              'src/**/*.test.ts',
+              'src/**/*.test.tsx',
+              'src/types',
+              'src/main.tsx',
+              'src/vite-env.d.ts',
+            ],
+            extension: ['.ts', '.tsx'],
+            requireEnv: false,
+          }),
+        ]
+      : []),
+  ],
   server: {
     port: 3000,
     proxy: {

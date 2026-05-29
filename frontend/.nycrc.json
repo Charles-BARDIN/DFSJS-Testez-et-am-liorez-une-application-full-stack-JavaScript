@@ -1,0 +1,14 @@
+{
+  "report-dir": "coverage-e2e",
+  "reporter": ["text", "text-summary", "html", "lcov"],
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/test/**",
+    "src/types/**",
+    "src/main.tsx",
+    "src/vite-env.d.ts",
+    "**/*.d.ts"
+  ]
+}

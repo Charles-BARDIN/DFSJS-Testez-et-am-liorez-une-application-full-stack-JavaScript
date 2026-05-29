@@ -30,7 +30,14 @@ Thumbs.db
 
 # Testing
 coverage/
+coverage-e2e/
+.nyc_output/
 *.lcov
+
+# Cypress
+cypress/screenshots/
+cypress/videos/
+cypress/downloads/
 
 # Logs
 logs/
