@@ -314,19 +314,10 @@ The test DB schema is applied automatically by Vitest's `globalSetup` using
 |---|---|
 | `npm test` | All tests (unit + integration), one shot |
 | `npm run test:watch` | All tests in watch mode |
-| `npm run test:unit` | Unit tests only (no DB needed) |
-| `npm run test:integration` | Integration tests only (requires `postgres-test`) |
+| `npm run test:coverage` | All tests + coverage report in `backend/coverage/` |
 
-#### Generate coverage reports
-
-| Command | Report directory |
-|---|---|
-| `npm run test:coverage` | `backend/coverage/` (combined, the official one) |
-| `npm run test:coverage:unit` | `backend/coverage-unit/` (unit subset) |
-| `npm run test:coverage:integration` | `backend/coverage-integration/` (integration subset) |
-
-Open `backend/coverage/index.html` in a browser to inspect the combined report
-file by file.
+Open `backend/coverage/index.html` in a browser to inspect the report file by
+file.
 
 > Zod schemas and DTO files (`src/dto/**`) are excluded from the coverage
 > report on purpose — they are declarative validation definitions that the
@@ -415,16 +406,13 @@ cd frontend && npx nyc report \
 
 | Suite | Generation command | Report directory |
 |---|---|---|
-| Backend, combined | `cd backend && npm run test:coverage` | `backend/coverage/` |
-| Backend, unit only | `cd backend && npm run test:coverage:unit` | `backend/coverage-unit/` |
-| Backend, integration only | `cd backend && npm run test:coverage:integration` | `backend/coverage-integration/` |
+| Backend Vitest | `cd backend && npm run test:coverage` | `backend/coverage/` |
 | Frontend Vitest | `cd frontend && npm run test:coverage` | `frontend/coverage/` |
 | Frontend Cypress E2E | `cd frontend && npm run test:e2e` | `frontend/coverage-e2e/` |
 
 All four indicators — statements, branches, functions, lines — are at or above
-**80 %** in the official reports (backend combined, frontend Vitest, frontend
-E2E). Integration tests account for more than 30 % of the total test count on
-both the front and the back.
+**80 %** in each of these reports. Integration tests account for more than
+30 % of the total test count on both the front and the back.
 
 ## Project structure
 
@@ -485,11 +473,7 @@ both the front and the back.
 | `npm start` | Run the compiled server from `dist/server.js` |
 | `npm test` | Vitest run |
 | `npm run test:watch` | Vitest in watch mode |
-| `npm run test:unit` | Unit tests only |
-| `npm run test:integration` | Integration tests only |
-| `npm run test:coverage` | Combined coverage |
-| `npm run test:coverage:unit` | Unit coverage only |
-| `npm run test:coverage:integration` | Integration coverage only |
+| `npm run test:coverage` | All tests + coverage report |
 | `npm run prisma:generate` | Regenerate Prisma Client |
 | `npm run prisma:migrate` | Run Prisma migrations (dev) |
 | `npm run prisma:seed` | Seed the development DB |

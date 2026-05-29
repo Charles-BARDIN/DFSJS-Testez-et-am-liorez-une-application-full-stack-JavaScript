@@ -31,8 +31,6 @@ Thumbs.db
 
 # Testing
 coverage/
-coverage-unit/
-coverage-integration/
 coverage-e2e/
 .nyc_output/
 *.lcov
