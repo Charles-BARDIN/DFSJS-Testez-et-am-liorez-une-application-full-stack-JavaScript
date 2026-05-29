@@ -2,15 +2,23 @@
   "name": "yoga-studio-backend",
   "version": "1.0.0",
   "description": "Backend API for Yoga Studio App",
-  "main": "dist/app.js",
+  "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon",
     "build": "tsc",
-    "start": "node dist/app.js",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:unit": "vitest run --exclude '**/*.integration.test.ts'",
+    "test:integration": "vitest run integration.test",
+    "test:coverage:unit": "vitest run --coverage --exclude '**/*.integration.test.ts' --coverage.reportsDirectory=./coverage-unit",
+    "test:coverage:integration": "vitest run --coverage integration.test --coverage.reportsDirectory=./coverage-integration",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node prisma/seed.ts",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "prisma:test:push": "dotenv -e .env.test -- prisma db push --skip-generate"
   },
   "keywords": [],
   "author": "",
@@ -30,9 +38,14 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22",
+    "@types/supertest": "^7.2.0",
+    "@vitest/coverage-v8": "^4.1.7",
+    "dotenv-cli": "^11.0.0",
     "nodemon": "^3.1.11",
     "prisma": "^5.20.0",
+    "supertest": "^7.2.2",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.7"
   }
 }

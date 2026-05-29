@@ -18,5 +18,22 @@ services:
       timeout: 5s
       retries: 5
 
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: yoga-studio-db-test
+    environment:
+      POSTGRES_USER: yogauser
+      POSTGRES_PASSWORD: yogapass
+      POSTGRES_DB: yogastudio_test
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yogauser -d yogastudio_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres_data:

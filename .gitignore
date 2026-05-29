@@ -8,6 +8,7 @@ pnpm-debug.log*
 # Environment variables
 .env
 .env.local
+.env.test
 .env.development.local
 .env.test.local
 .env.production.local
@@ -30,6 +31,8 @@ Thumbs.db
 
 # Testing
 coverage/
+coverage-unit/
+coverage-integration/
 coverage-e2e/
 .nyc_output/
 *.lcov
