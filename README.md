@@ -404,11 +404,26 @@ cd frontend && npx nyc report \
 
 ### Coverage report locations
 
-| Suite | Generation command | Report directory |
+When you regenerate them locally:
+
+| Suite | Generation command | Local report directory |
 |---|---|---|
 | Backend Vitest | `cd backend && npm run test:coverage` | `backend/coverage/` |
 | Frontend Vitest | `cd frontend && npm run test:coverage` | `frontend/coverage/` |
 | Frontend Cypress E2E | `cd frontend && npm run test:e2e` | `frontend/coverage-e2e/` |
+
+These local directories are gitignored (they are regenerated on every run).
+
+#### Committed snapshots (for review)
+
+A snapshot of the three coverage reports is committed at the repository root
+so they can be browsed without re-running the suites:
+
+| Suite | Browse |
+|---|---|
+| Backend Vitest | `reports/coverage-back/index.html` |
+| Frontend Vitest | `reports/coverage-front-vitest/index.html` |
+| Frontend Cypress E2E | `reports/coverage-front-e2e/index.html` |
 
 All four indicators — statements, branches, functions, lines — are at or above
 **80 %** in each of these reports. Integration tests account for more than
@@ -458,6 +473,10 @@ All four indicators — statements, branches, functions, lines — are at or abo
 │   ├── vite.config.ts
 │   ├── .nycrc.json
 │   └── package.json
+├── reports/                      # Committed coverage snapshots (HTML)
+│   ├── coverage-back/
+│   ├── coverage-front-vitest/
+│   └── coverage-front-e2e/
 ├── docker-compose.yml            # `postgres` (dev :5432) + `postgres-test` (tests :5433)
 └── README.md
 ```
